@@ -5,11 +5,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 
+import com.bytedance.practice5.model.Message;
 import com.bytedance.practice5.socket.SocketActivity;
 import com.facebook.drawee.backends.pipeline.Fresco;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -56,10 +71,56 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //TODO 2
-    // 用HttpUrlConnection实现获取留言列表数据，用Gson解析数据，更新UI（调用adapter.setData()方法）
-    // 注意网络请求和UI更新分别应该放在哪个线程中
     private void getData(String studentId){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String urlStr=null;
+                if(studentId==null){
+                    urlStr="https://api-sjtu-camp-2021.bytedance.com/homework/invoke/messages";
+                }else{
+                    urlStr=String.format("https://api-sjtu-camp-2021.bytedance.com/homework/invoke/messages?student_id=%s", studentId);
+                }
+                System.out.println(urlStr);
+                List<Message> result=null;
+
+                try{
+                    URL url=new URL(urlStr);
+                    HttpURLConnection conn=(HttpURLConnection)url.openConnection();
+                    conn.setConnectTimeout(6000);
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("token","U0pUVS1ieXRlZGFuY2UtYW5kcm9pZA==");
+                    if(conn.getResponseCode()==200){
+                        InputStream inputStream=conn.getInputStream();
+                        BufferedReader reader=new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        Gson gson=new Gson();
+                        JsonObject jsonObject=gson.fromJson(reader,JsonObject.class);
+                        boolean success=jsonObject.get("success").getAsBoolean();
+                        if(!success){
+                            Log.d(TAG,"return failed");
+                        }
+                        result=gson.fromJson(jsonObject.get("feeds").getAsJsonArray(),new TypeToken<List<Message>>(){}.getType());
+                        reader.close();
+                        inputStream.close();
+                    }else{
+                        Log.d(TAG,"getData response error");
+                    }
+                    conn.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.d(TAG,"network error");
+                }
+                if(result!=null && !result.isEmpty()){
+                    List<Message> finalResult = result;
+                    new Handler(getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.setData(finalResult);
+                        }
+                    });
+                }
+            }
+        }).start();
 
     }
 

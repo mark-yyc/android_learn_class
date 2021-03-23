@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bytedance.practice5.model.UploadResponse;
 import com.facebook.drawee.view.SimpleDraweeView;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import okhttp3.MediaType;
@@ -85,9 +86,11 @@ public class UploadActivity extends AppCompatActivity {
     }
 
     private void initNetwork() {
-        //TODO 3
-        // 创建Retrofit实例
-        // 生成api对象
+        final Retrofit retrofit=new Retrofit.Builder()
+                .baseUrl("https://api-sjtu-camp-2021.bytedance.com/homework/invoke/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        api=retrofit.create(IApi.class);
     }
 
     private void getFile(int requestCode, String type, String title) {
@@ -120,15 +123,32 @@ public class UploadActivity extends AppCompatActivity {
             Toast.makeText(this, "文件过大", Toast.LENGTH_SHORT).show();
             return;
         }
-        //TODO 5
-        // 使用api.submitMessage()方法提交留言
-        // 如果提交成功则关闭activity，否则弹出toast
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                MultipartBody.Part coverPart=MultipartBody.Part.
+                        createFormData("image","cover.png", RequestBody.create(MediaType.parse("multipart/form-data"),coverImageData));
+                MultipartBody.Part from_body=MultipartBody.Part.createFormData("from",Constants.USER_NAME);
+                MultipartBody.Part to_body=MultipartBody.Part.createFormData("to",to);
+                MultipartBody.Part content_body=MultipartBody.Part.createFormData("content",content);
+                Call<UploadResponse> call=api.submitMessage(Constants.STUDENT_ID,"",from_body,to_body,content_body,coverPart,"U0pUVS1ieXRlZGFuY2UtYW5kcm9pZA==");
+                try{
+                    Response<UploadResponse> response=call.execute();
+                    if(response.isSuccessful()&&response.body()!=null){
+                        Log.d(TAG,"upload success");
+                        UploadActivity.this.finish();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.d(TAG,"upload failed");
+                }
+            }
+        }).start();
     }
 
 
     // TODO 7 选做 用URLConnection的方式实现提交
-    private void submitMessageWithURLConnection(){
-
+    private void submitMessageWithURLConnection() {
     }
 
 
