@@ -2,12 +2,15 @@ package com.byted.camp.todolist;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -44,6 +47,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SharedPreferences sharedPreference=getApplicationContext().getSharedPreferences("todolist",Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=sharedPreference.edit();
+        int num=sharedPreference.getInt("title",0);
+        num++;
+        this.setTitle(getResources().getString(R.string.app_name)+ num);
+        editor.putInt("title",num);
+        editor.apply();
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -176,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
         }
         ContentValues values = new ContentValues();
         values.put(TodoNote.COLUMN_STATE, note.getState().intValue);
+        values.put(TodoNote.COLUMN_CONTENT,note.getContent());
 
         int rows = database.update(TodoNote.TABLE_NAME, values,
                 TodoNote._ID + "=?",

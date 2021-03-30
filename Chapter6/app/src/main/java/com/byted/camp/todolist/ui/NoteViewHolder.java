@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.byted.camp.todolist.NoteOperator;
@@ -28,6 +29,7 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
     private TextView contentText;
     private TextView dateText;
     private View deleteBtn;
+    private RelativeLayout relativeLayout;
 
     public NoteViewHolder(@NonNull View itemView, NoteOperator operator) {
         super(itemView);
@@ -37,9 +39,11 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
         contentText = itemView.findViewById(R.id.text_content);
         dateText = itemView.findViewById(R.id.text_date);
         deleteBtn = itemView.findViewById(R.id.btn_delete);
+        relativeLayout=itemView.findViewById(R.id.item_note_layout);
     }
 
     public void bind(final Note note) {
+
         contentText.setText(note.getContent());
         dateText.setText(SIMPLE_DATE_FORMAT.format(note.getDate()));
 
@@ -56,6 +60,32 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
             @Override
             public void onClick(View v) {
                 operator.deleteNote(note);
+            }
+        });
+
+        relativeLayout.setOnLongClickListener(new View.OnLongClickListener(){
+            @Override
+            public boolean onLongClick(View v) {
+                NoteDialog noteDialog =new NoteDialog(v.getContext());
+                noteDialog.setEditTextContent(note.getContent());
+                noteDialog.setCancel(new NoteDialog.IOnCancelListener() {
+                    @Override
+                    public void onCancel(NoteDialog dialog) {
+                        dialog.cancel();
+                    }
+                });
+                noteDialog.setConfirm(new NoteDialog.IOnConfirmListener(){
+                    @Override
+                    public void onConfirm(NoteDialog dialog) {
+                        String content=dialog.getEditTextContent();
+                        System.out.println(content);
+                        note.setContent(content);
+                        operator.updateNote(note);
+                        dialog.cancel();
+                    }
+                });
+                noteDialog.show();
+                return true;
             }
         });
 
